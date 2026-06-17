@@ -1,1102 +1,731 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Pocket Greens – Mini Golf</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="UTF-8">
+<title>Mini Golf – Single File</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <style>
   :root {
-    color-scheme: dark;
-    --bg: #071820;
-    --panel: #0f2733;
-    --accent: #4fe3a1;
-    --accent-soft: #2a9f73;
-    --danger: #ff6b6b;
-    --text: #f5f7fa;
-    --muted: #9fb3c8;
-    --sand: #d9c27a;
-    --water: #2a6fd6;
-    --fairway: #1f7a4d;
-    --rough: #0f4a2c;
+    --bg: #0b1724;
+    --course: #1f6b3b;
+    --border: #14502a;
+    --ui-bg: #101820;
+    --ui-accent: #f5c542;
+    --ball: #fdfdfd;
     --hole: #111111;
+    --obstacle: #2c3e50;
+    --obstacle-alt: #c0392b;
+    --text: #f7f7f7;
   }
-
   * {
     box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
-
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: radial-gradient(circle at top, #123040 0, #02070b 55%, #000000 100%);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-    color: var(--text);
-    height: 100%;
-    overflow: hidden;
-  }
-
   body {
+    margin: 0;
+    background: radial-gradient(circle at top, #182b3a 0, #05070b 60%);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text);
     display: flex;
-    align-items: stretch;
-    justify-content: center;
-  }
-
-  #game-root {
-    position: relative;
-    width: 100vw;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
     height: 100vh;
     overflow: hidden;
-    touch-action: none;
   }
-
-  canvas {
-    position: absolute;
-    inset: 0;
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 900px;
+    padding: 8px;
+    gap: 8px;
+  }
+  #header {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: rgba(10, 16, 24, 0.9);
+    border-radius: 10px;
+    padding: 8px 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  #title {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+  }
+  #info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.8rem;
+  }
+  .pill {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  #controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  button {
+    border-radius: 999px;
+    border: none;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #f5c542, #f39c12);
+    color: #111;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  button:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+  #canvas-container {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 260px;
+    background: radial-gradient(circle at center, #1f6b3b 0, #0f3c21 60%);
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+  #game-canvas {
     width: 100%;
     height: 100%;
     display: block;
   }
-
-  .hud {
+  #overlay-ui {
     position: absolute;
-    inset: 0;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: env(safe-area-inset-top, 12px) 12px env(safe-area-inset-bottom, 12px) 12px;
-  }
-
-  .hud-top {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .hud-bottom {
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    padding: 6px 8px;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    gap: 8px;
+    pointer-events: none;
   }
-
-  .pill {
-    pointer-events: auto;
-    background: rgba(7, 24, 32, 0.9);
-    border-radius: 999px;
-    padding: 6px 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid rgba(79, 227, 161, 0.25);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    font-size: 12px;
+  #power-bar-wrapper {
+    pointer-events: none;
+    flex: 1;
+    max-width: 260px;
   }
-
-  .pill strong {
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-size: 11px;
-    color: var(--accent);
-  }
-
-  .pill span.value {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .btn {
-    pointer-events: auto;
-    border-radius: 999px;
-    border: none;
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    background: linear-gradient(135deg, var(--accent) 0, #7fffd4 100%);
-    color: #02110a;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 8px 18px rgba(0,0,0,0.6);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-  }
-
-  .btn:active {
-    transform: translateY(1px) scale(0.99);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.7);
-  }
-
-  .btn.secondary {
-    background: rgba(7, 24, 32, 0.9);
-    color: var(--muted);
-    border: 1px solid rgba(159, 179, 200, 0.4);
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
-  }
-
-  .btn.secondary:active {
-    transform: translateY(1px) scale(0.99);
-  }
-
-  .badge {
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(79, 227, 161, 0.12);
-    color: var(--accent);
-    font-size: 10px;
+  #power-label {
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    opacity: 0.8;
+    margin-bottom: 2px;
   }
-
-  .center-panel {
-    pointer-events: auto;
+  #power-bar {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.35);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  #power-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2ecc71, #f1c40f, #e74c3c);
+    transition: width 0.08s linear;
+  }
+  #hint {
+    pointer-events: none;
+    font-size: 0.7rem;
+    text-align: right;
+    max-width: 200px;
+    opacity: 0.85;
+  }
+  #message-banner {
     position: absolute;
+    top: 10px;
     left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    min-width: min(360px, 90vw);
-    max-width: 90vw;
-    background: radial-gradient(circle at top, #16394a 0, #071820 55%, #02070b 100%);
-    border-radius: 24px;
-    padding: 18px 18px 14px;
-    border: 1px solid rgba(79, 227, 161, 0.35);
-    box-shadow:
-      0 0 0 1px rgba(0,0,0,0.8),
-      0 24px 60px rgba(0,0,0,0.85);
-    display: none;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(16,24,32,0.9);
+    border: 1px solid rgba(245,197,66,0.7);
+    font-size: 0.8rem;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
   }
-
-  .center-panel.visible {
-    display: block;
-  }
-
-  .center-panel h1 {
-    margin: 0 0 4px;
-    font-size: 22px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .center-panel p {
-    margin: 4px 0;
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  .center-panel .panel-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-    gap: 8px;
-  }
-
-  .center-panel .stat {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    font-size: 12px;
-  }
-
-  .center-panel .stat-label {
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 10px;
-    color: var(--muted);
-  }
-
-  .center-panel .stat-value {
-    font-variant-numeric: tabular-nums;
-    font-size: 14px;
-  }
-
-  .center-panel .buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 14px;
-  }
-
-  .hint {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 8px;
-  }
-
-  .hint span {
-    color: var(--accent);
-  }
-
   @media (max-width: 600px) {
-    .center-panel {
-      border-radius: 18px;
-      padding: 16px 14px 12px;
+    #header {
+      padding: 6px 8px;
     }
-    .center-panel h1 {
-      font-size: 18px;
+    #title {
+      font-size: 0.85rem;
+    }
+    #info {
+      font-size: 0.75rem;
+    }
+    button {
+      font-size: 0.75rem;
+      padding: 5px 10px;
+    }
+    #hint {
+      font-size: 0.65rem;
     }
   }
 </style>
 </head>
 <body>
-<div id="game-root">
-  <canvas id="game"></canvas>
-  <div class="hud">
-    <div class="hud-top">
-      <div class="pill">
-        <strong>Hole</strong>
-        <span class="value" id="holeLabel">1 / 6</span>
-      </div>
-      <div class="pill">
-        <strong>Strokes</strong>
-        <span class="value" id="strokeLabel">0</span>
-      </div>
-      <div class="pill">
-        <strong>Total</strong>
-        <span class="value" id="totalLabel">0</span>
-      </div>
+<div id="game-wrapper">
+  <div id="header">
+    <div id="title">Orbital Mini Golf</div>
+    <div id="info">
+      <div class="pill" id="level-pill">Hole: <span id="level-display">1</span> / <span id="level-total">5</span></div>
+      <div class="pill">Strokes: <span id="stroke-display">0</span></div>
+      <div class="pill">Best: <span id="best-display">–</span></div>
     </div>
-    <div class="hud-bottom">
-      <button class="btn secondary" id="resetBtn" type="button">
-        ⟳ Reset
-      </button>
-      <div class="pill">
-        <strong>Drag</strong>
-        <span class="value">Aim &amp; Release</span>
-      </div>
+    <div id="controls">
+      <button id="reset-hole">Reset Hole</button>
+      <button id="next-hole">Next Hole</button>
     </div>
   </div>
-
-  <div class="center-panel" id="introPanel">
-    <div class="badge">Original Mini Golf</div>
-    <h1>Pocket Greens</h1>
-    <p>Drag from the ball to set your shot. Longer drags mean stronger hits. Sink the ball in as few strokes as you can.</p>
-    <div class="panel-row">
-      <div class="stat">
-        <div class="stat-label">Course</div>
-        <div class="stat-value">6 handcrafted holes</div>
+  <div id="canvas-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="overlay-ui">
+      <div id="power-bar-wrapper">
+        <div id="power-label">Shot Power</div>
+        <div id="power-bar"><div id="power-fill"></div></div>
       </div>
-      <div class="stat">
-        <div class="stat-label">Surface</div>
-        <div class="stat-value">Fairway, rough, sand &amp; water</div>
-      </div>
+      <div id="hint">Drag from the ball to aim. Release to shoot. Avoid obstacles and sink the ball.</div>
     </div>
-    <p class="hint">Tip: <span>Short, precise shots</span> are often better than one huge swing.</p>
-    <div class="buttons">
-      <button class="btn" id="startBtn" type="button">
-        Play
-      </button>
-    </div>
-  </div>
-
-  <div class="center-panel" id="betweenPanel">
-    <div class="badge" id="betweenBadge">Hole Complete</div>
-    <h1 id="betweenTitle">Nice Shot!</h1>
-    <p id="betweenText">You cleared the hole.</p>
-    <div class="panel-row">
-      <div class="stat">
-        <div class="stat-label">Hole strokes</div>
-        <div class="stat-value" id="betweenHoleStrokes">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Course total</div>
-        <div class="stat-value" id="betweenTotalStrokes">0</div>
-      </div>
-    </div>
-    <p class="hint" id="betweenHint">Next hole introduces a new twist in the layout.</p>
-    <div class="buttons">
-      <button class="btn secondary" id="betweenRestart" type="button">Restart Course</button>
-      <button class="btn" id="betweenNext" type="button">Next Hole</button>
-    </div>
+    <div id="message-banner"></div>
   </div>
 </div>
 
 <script>
 (function() {
-  const canvas = document.getElementById('game');
+  const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
+  const strokeDisplay = document.getElementById('stroke-display');
+  const levelDisplay = document.getElementById('level-display');
+  const levelTotalDisplay = document.getElementById('level-total');
+  const bestDisplay = document.getElementById('best-display');
+  const resetHoleBtn = document.getElementById('reset-hole');
+  const nextHoleBtn = document.getElementById('next-hole');
+  const powerFill = document.getElementById('power-fill');
+  const banner = document.getElementById('message-banner');
 
   let width = 0;
   let height = 0;
-  let pixelRatio = window.devicePixelRatio || 1;
 
-  function resize() {
-    const rect = canvas.getBoundingClientRect();
+  function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
     width = rect.width;
     height = rect.height;
-    pixelRatio = window.devicePixelRatio || 1;
-    canvas.width = width * pixelRatio;
-    canvas.height = height * pixelRatio;
-    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    canvas.width = width;
+    canvas.height = height;
   }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
 
-  window.addEventListener('resize', resize);
-  resize();
-
-  // --- Game State ---
-  const game = {
-    holes: [],
-    currentHoleIndex: 0,
-    ball: {
-      x: 0,
-      y: 0,
-      vx: 0,
-      vy: 0,
-      radius: 10,
-      moving: false,
-      inHole: false
-    },
-    strokeCount: 0,
-    totalStrokes: 0,
+  const state = {
+    ball: { x: 0, y: 0, r: 10, vx: 0, vy: 0 },
+    hole: { x: 0, y: 0, r: 14 },
+    obstacles: [],
+    wallsInset: 18,
+    friction: 0.985,
+    minSpeed: 0.02,
     aiming: false,
     aimStart: null,
     aimCurrent: null,
-    lastTime: performance.now(),
-    started: false,
-    finished: false
+    strokeCount: 0,
+    levelIndex: 0,
+    levels: [],
+    bestScores: {},
+    ballInHole: false,
+    bannerTimer: null
   };
 
-  // --- UI Elements ---
-  const holeLabel = document.getElementById('holeLabel');
-  const strokeLabel = document.getElementById('strokeLabel');
-  const totalLabel = document.getElementById('totalLabel');
-  const resetBtn = document.getElementById('resetBtn');
-
-  const introPanel = document.getElementById('introPanel');
-  const startBtn = document.getElementById('startBtn');
-
-  const betweenPanel = document.getElementById('betweenPanel');
-  const betweenBadge = document.getElementById('betweenBadge');
-  const betweenTitle = document.getElementById('betweenTitle');
-  const betweenText = document.getElementById('betweenText');
-  const betweenHoleStrokes = document.getElementById('betweenHoleStrokes');
-  const betweenTotalStrokes = document.getElementById('betweenTotalStrokes');
-  const betweenHint = document.getElementById('betweenHint');
-  const betweenRestart = document.getElementById('betweenRestart');
-  const betweenNext = document.getElementById('betweenNext');
-
-  function showIntro() {
-    introPanel.classList.add('visible');
-  }
-
-  function hideIntro() {
-    introPanel.classList.remove('visible');
-  }
-
-  function showBetween(isCourseEnd) {
-    betweenPanel.classList.add('visible');
-    betweenHoleStrokes.textContent = game.strokeCount.toString();
-    betweenTotalStrokes.textContent = game.totalStrokes.toString();
-
-    if (isCourseEnd) {
-      betweenBadge.textContent = 'Course Complete';
-      betweenTitle.textContent = 'Pocket Pro!';
-      betweenText.textContent = 'You finished all holes on this course.';
-      betweenHint.textContent = 'Try to replay and shave off a few strokes.';
-      betweenNext.textContent = 'Play Again';
-    } else {
-      betweenBadge.textContent = 'Hole Complete';
-      betweenTitle.textContent = 'Nice Shot!';
-      const nextHole = game.currentHoleIndex + 2;
-      betweenText.textContent = 'You cleared hole ' + (game.currentHoleIndex + 1) + '.';
-      const hints = [
-        'Next hole bends sharply—plan your angle before you swing.',
-        'Watch the water; it loves to steal golf balls.',
-        'Sand slows you down—use it to your advantage.',
-        'Sometimes a gentle tap is all you need.',
-        'Use the walls to bounce into better lines.'
-      ];
-      betweenHint.textContent = hints[(nextHole - 1) % hints.length] || 'Each hole has its own rhythm—feel it out.';
-      betweenNext.textContent = 'Next Hole';
+  function showBanner(text) {
+    banner.textContent = text;
+    banner.style.opacity = '1';
+    if (state.bannerTimer) {
+      clearTimeout(state.bannerTimer);
     }
+    state.bannerTimer = setTimeout(() => {
+      banner.style.opacity = '0';
+    }, 2000);
   }
 
-  function hideBetween() {
-    betweenPanel.classList.remove('visible');
+  function createLevels() {
+    // Levels are parameterized layouts, all original
+    state.levels = [
+      {
+        name: "Opening Arc",
+        holePos: { x: 0.8, y: 0.25 },
+        ballPos: { x: 0.2, y: 0.75 },
+        obstacles: [
+          { type: "wall", x: 0.35, y: 0.3, w: 0.02, h: 0.4, angle: 0 },
+          { type: "wall", x: 0.55, y: 0.7, w: 0.25, h: 0.02, angle: 0 },
+          { type: "bumper", x: 0.55, y: 0.45, r: 0.05 },
+        ]
+      },
+      {
+        name: "Diagonal Drift",
+        holePos: { x: 0.15, y: 0.2 },
+        ballPos: { x: 0.85, y: 0.8 },
+        obstacles: [
+          { type: "wall", x: 0.3, y: 0.5, w: 0.02, h: 0.5, angle: -0.4 },
+          { type: "wall", x: 0.7, y: 0.5, w: 0.02, h: 0.5, angle: 0.4 },
+          { type: "gate", x: 0.5, y: 0.35, w: 0.18, h: 0.04 },
+        ]
+      },
+      {
+        name: "Twin Channels",
+        holePos: { x: 0.5, y: 0.15 },
+        ballPos: { x: 0.5, y: 0.85 },
+        obstacles: [
+          { type: "wall", x: 0.25, y: 0.5, w: 0.02, h: 0.6, angle: 0 },
+          { type: "wall", x: 0.75, y: 0.5, w: 0.02, h: 0.6, angle: 0 },
+          { type: "bumper", x: 0.5, y: 0.55, r: 0.05 },
+          { type: "gate", x: 0.5, y: 0.35, w: 0.3, h: 0.04 },
+        ]
+      },
+      {
+        name: "Orbiting Hazard",
+        holePos: { x: 0.85, y: 0.5 },
+        ballPos: { x: 0.15, y: 0.5 },
+        obstacles: [
+          { type: "bumper", x: 0.4, y: 0.5, r: 0.06 },
+          { type: "bumper", x: 0.6, y: 0.35, r: 0.05 },
+          { type: "bumper", x: 0.6, y: 0.65, r: 0.05 },
+          { type: "wall", x: 0.5, y: 0.5, w: 0.32, h: 0.02, angle: 0 },
+        ]
+      },
+      {
+        name: "Final Spiral",
+        holePos: { x: 0.5, y: 0.2 },
+        ballPos: { x: 0.2, y: 0.8 },
+        obstacles: [
+          { type: "wall", x: 0.35, y: 0.6, w: 0.02, h: 0.4, angle: 0.5 },
+          { type: "wall", x: 0.65, y: 0.6, w: 0.02, h: 0.4, angle: -0.5 },
+          { type: "gate", x: 0.5, y: 0.45, w: 0.26, h: 0.04 },
+          { type: "bumper", x: 0.5, y: 0.3, r: 0.05 },
+        ]
+      }
+    ];
+    levelTotalDisplay.textContent = state.levels.length;
   }
 
-  startBtn.addEventListener('click', () => {
-    hideIntro();
-    startCourse();
-  });
-
-  betweenRestart.addEventListener('click', () => {
-    hideBetween();
-    startCourse();
-  });
-
-  betweenNext.addEventListener('click', () => {
-    hideBetween();
-    if (game.finished) {
-      startCourse();
-    } else {
-      nextHole();
-    }
-  });
-
-  resetBtn.addEventListener('click', () => {
-    resetCurrentHole();
-  });
-
-  // --- Course Definition ---
-  // Each hole is defined in normalized coordinates (0..1) and scaled to canvas.
-  // Shapes: walls (segments), sand (circles), water (circles), rough (rects), hole position.
-  function createCourse() {
-    const holes = [];
-
-    // Helper to create hole objects
-    function hole(def) {
-      holes.push(def);
-    }
-
-    // Hole 1: Gentle lane with a single bend
-    hole({
-      par: 3,
-      start: { x: 0.15, y: 0.8 },
-      hole: { x: 0.85, y: 0.25, radius: 0.02 },
-      walls: [
-        // Outer corridor
-        { x1: 0.1, y1: 0.9, x2: 0.9, y2: 0.9 },
-        { x1: 0.1, y1: 0.9, x2: 0.1, y2: 0.2 },
-        { x1: 0.1, y1: 0.2, x2: 0.9, y2: 0.2 },
-        { x1: 0.9, y1: 0.2, x2: 0.9, y2: 0.9 },
-        // Inner bend
-        { x1: 0.45, y1: 0.9, x2: 0.45, y2: 0.45 },
-        { x1: 0.45, y1: 0.45, x2: 0.9, y2: 0.45 }
-      ],
-      sand: [],
-      water: [],
-      roughRects: []
+  function loadLevel(index) {
+    const lvl = state.levels[index];
+    if (!lvl) return;
+    state.levelIndex = index;
+    levelDisplay.textContent = index + 1;
+    showBanner(lvl.name);
+    state.strokeCount = 0;
+    strokeDisplay.textContent = state.strokeCount;
+    state.ballInHole = false;
+    const inset = state.wallsInset;
+    state.ball.x = inset + lvl.ballPos.x * (width - inset * 2);
+    state.ball.y = inset + lvl.ballPos.y * (height - inset * 2);
+    state.ball.vx = 0;
+    state.ball.vy = 0;
+    state.hole.x = inset + lvl.holePos.x * (width - inset * 2);
+    state.hole.y = inset + lvl.holePos.y * (height - inset * 2);
+    state.obstacles = lvl.obstacles.map(o => {
+      const copy = Object.assign({}, o);
+      if (o.type === "wall") {
+        copy.w = o.w * width;
+        copy.h = o.h * height;
+      } else if (o.type === "gate") {
+        copy.w = o.w * width;
+        copy.h = o.h * height;
+      } else if (o.type === "bumper") {
+        copy.r = o.r * Math.min(width, height);
+      }
+      copy.x = inset + o.x * (width - inset * 2);
+      copy.y = inset + o.y * (height - inset * 2);
+      return copy;
     });
-
-    // Hole 2: Central island with water moat
-    hole({
-      par: 3,
-      start: { x: 0.2, y: 0.8 },
-      hole: { x: 0.8, y: 0.25, radius: 0.02 },
-      walls: [
-        { x1: 0.1, y1: 0.9, x2: 0.9, y2: 0.9 },
-        { x1: 0.1, y1: 0.9, x2: 0.1, y2: 0.15 },
-        { x1: 0.1, y1: 0.15, x2: 0.9, y2: 0.15 },
-        { x1: 0.9, y1: 0.15, x2: 0.9, y2: 0.9 }
-      ],
-      sand: [],
-      water: [
-        { x: 0.5, y: 0.5, radius: 0.18 }
-      ],
-      roughRects: [
-        { x: 0.32, y: 0.32, w: 0.36, h: 0.36 }
-      ]
-    });
-
-    // Hole 3: Zig-zag corridor with sand trap
-    hole({
-      par: 4,
-      start: { x: 0.15, y: 0.8 },
-      hole: { x: 0.85, y: 0.2, radius: 0.02 },
-      walls: [
-        { x1: 0.1, y1: 0.9, x2: 0.9, y2: 0.9 },
-        { x1: 0.1, y1: 0.9, x2: 0.1, y2: 0.6 },
-        { x1: 0.1, y1: 0.6, x2: 0.7, y2: 0.6 },
-        { x1: 0.7, y1: 0.6, x2: 0.7, y2: 0.35 },
-        { x1: 0.7, y1: 0.35, x2: 0.2, y2: 0.35 },
-        { x1: 0.2, y1: 0.35, x2: 0.2, y2: 0.15 },
-        { x1: 0.2, y1: 0.15, x2: 0.9, y2: 0.15 },
-        { x1: 0.9, y1: 0.15, x2: 0.9, y2: 0.9 }
-      ],
-      sand: [
-        { x: 0.45, y: 0.6, radius: 0.08 }
-      ],
-      water: [],
-      roughRects: []
-    });
-
-    // Hole 4: Narrow bridge over water
-    hole({
-      par: 4,
-      start: { x: 0.15, y: 0.8 },
-      hole: { x: 0.85, y: 0.2, radius: 0.02 },
-      walls: [
-        { x1: 0.1, y1: 0.9, x2: 0.9, y2: 0.9 },
-        { x1: 0.1, y1: 0.9, x2: 0.1, y2: 0.15 },
-        { x1: 0.1, y1: 0.15, x2: 0.9, y2: 0.15 },
-        { x1: 0.9, y1: 0.15, x2: 0.9, y2: 0.9 },
-        // Bridge rails
-        { x1: 0.3, y1: 0.55, x2: 0.7, y2: 0.55 },
-        { x1: 0.3, y1: 0.45, x2: 0.7, y2: 0.45 }
-      ],
-      sand: [],
-      water: [
-        { x: 0.5, y: 0.5, radius: 0.25 }
-      ],
-      roughRects: []
-    });
-
-    // Hole 5: Double sand pockets
-    hole({
-      par: 4,
-      start: { x: 0.2, y: 0.8 },
-      hole: { x: 0.8, y: 0.2, radius: 0.02 },
-      walls: [
-        { x1: 0.1, y1: 0.9, x2: 0.9, y2: 0.9 },
-        { x1: 0.1, y1: 0.9, x2: 0.1, y2: 0.15 },
-        { x1: 0.1, y1: 0.15, x2: 0.9, y2: 0.15 },
-        { x1: 0.9, y1: 0.15, x2: 0.9, y2: 0.9 }
-      ],
-      sand: [
-        { x: 0.35, y: 0.55, radius: 0.09 },
-        { x: 0.65, y: 0.4, radius: 0.09 }
-      ],
-      water: [],
-      roughRects: [
-        { x: 0.25, y: 0.25, w: 0.2, h: 0.1 }
-      ]
-    });
-
-    // Hole 6: Final S-curve with mixed surfaces
-    hole({
-      par: 5,
-      start: { x: 0.15, y: 0.8 },
-      hole: { x: 0.85, y: 0.2, radius: 0.02 },
-      walls: [
-        { x1: 0.1, y1: 0.9, x2: 0.9, y2: 0.9 },
-        { x1: 0.1, y1: 0.9, x2: 0.1, y2: 0.2 },
-        { x1: 0.1, y1: 0.2, x2: 0.9, y2: 0.2 },
-        { x1: 0.9, y1: 0.2, x2: 0.9, y2: 0.9 },
-        // S-curve inner walls
-        { x1: 0.3, y1: 0.9, x2: 0.3, y2: 0.6 },
-        { x1: 0.3, y1: 0.6, x2: 0.7, y2: 0.6 },
-        { x1: 0.7, y1: 0.6, x2: 0.7, y2: 0.35 },
-        { x1: 0.7, y1: 0.35, x2: 0.3, y2: 0.35 },
-        { x1: 0.3, y1: 0.35, x2: 0.3, y2: 0.2 }
-      ],
-      sand: [
-        { x: 0.5, y: 0.75, radius: 0.07 }
-      ],
-      water: [
-        { x: 0.5, y: 0.45, radius: 0.12 }
-      ],
-      roughRects: [
-        { x: 0.2, y: 0.25, w: 0.2, h: 0.08 },
-        { x: 0.6, y: 0.25, w: 0.2, h: 0.08 }
-      ]
-    });
-
-    return holes;
+    updateBestDisplay();
   }
 
-  game.holes = createCourse();
-
-  function startCourse() {
-    game.currentHoleIndex = 0;
-    game.totalStrokes = 0;
-    game.finished = false;
-    loadHole(game.currentHoleIndex);
+  function updateBestDisplay() {
+    const key = "lvl" + state.levelIndex;
+    const best = state.bestScores[key];
+    bestDisplay.textContent = best != null ? best : "–";
   }
 
-  function loadHole(index) {
-    const hole = game.holes[index];
-    const sx = hole.start.x * width;
-    const sy = hole.start.y * height;
-    game.ball.x = sx;
-    game.ball.y = sy;
-    game.ball.vx = 0;
-    game.ball.vy = 0;
-    game.ball.inHole = false;
-    game.strokeCount = 0;
-    game.started = true;
-    updateHUD();
-  }
-
-  function resetCurrentHole() {
-    const hole = game.holes[game.currentHoleIndex];
-    const sx = hole.start.x * width;
-    const sy = hole.start.y * height;
-    game.ball.x = sx;
-    game.ball.y = sy;
-    game.ball.vx = 0;
-    game.ball.vy = 0;
-    game.ball.inHole = false;
-    game.totalStrokes -= game.strokeCount;
-    if (game.totalStrokes < 0) game.totalStrokes = 0;
-    game.strokeCount = 0;
-    updateHUD();
+  function resetHole() {
+    loadLevel(state.levelIndex);
   }
 
   function nextHole() {
-    if (game.currentHoleIndex < game.holes.length - 1) {
-      game.currentHoleIndex++;
-      loadHole(game.currentHoleIndex);
-    } else {
-      game.finished = true;
-      showBetween(true);
-    }
+    const nextIndex = (state.levelIndex + 1) % state.levels.length;
+    loadLevel(nextIndex);
   }
 
-  function updateHUD() {
-    holeLabel.textContent = (game.currentHoleIndex + 1) + ' / ' + game.holes.length;
-    strokeLabel.textContent = game.strokeCount.toString();
-    totalLabel.textContent = game.totalStrokes.toString();
-  }
+  resetHoleBtn.addEventListener('click', () => {
+    resetHole();
+  });
+  nextHoleBtn.addEventListener('click', () => {
+    nextHole();
+  });
 
-  // --- Input Handling ---
-  const root = document.getElementById('game-root');
-
-  function getEventPos(e) {
+  function getPointerPos(evt) {
     const rect = canvas.getBoundingClientRect();
-    if (e.touches && e.touches.length > 0) {
-      return {
-        x: (e.touches[0].clientX - rect.left),
-        y: (e.touches[0].clientY - rect.top)
-      };
-    } else if (e.changedTouches && e.changedTouches.length > 0) {
-      return {
-        x: (e.changedTouches[0].clientX - rect.left),
-        y: (e.changedTouches[0].clientY - rect.top)
-      };
+    let clientX, clientY;
+    if (evt.touches && evt.touches.length > 0) {
+      clientX = evt.touches[0].clientX;
+      clientY = evt.touches[0].clientY;
     } else {
-      return {
-        x: (e.clientX - rect.left),
-        y: (e.clientY - rect.top)
-      };
+      clientX = evt.clientX;
+      clientY = evt.clientY;
+    }
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  function pointerDown(evt) {
+    evt.preventDefault();
+    if (state.ballInHole) return;
+    if (Math.hypot(state.ball.vx, state.ball.vy) > 0.05) return;
+    const pos = getPointerPos(evt);
+    const dist = Math.hypot(pos.x - state.ball.x, pos.y - state.ball.y);
+    if (dist <= state.ball.r * 1.6) {
+      state.aiming = true;
+      state.aimStart = { x: pos.x, y: pos.y };
+      state.aimCurrent = { x: pos.x, y: pos.y };
     }
   }
 
-  function startAim(pos) {
-    if (!game.started || game.ball.moving || game.ball.inHole) return;
-    const dx = pos.x - game.ball.x;
-    const dy = pos.y - game.ball.y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist <= game.ball.radius * 2.2) {
-      game.aiming = true;
-      game.aimStart = { x: pos.x, y: pos.y };
-      game.aimCurrent = { x: pos.x, y: pos.y };
+  function pointerMove(evt) {
+    if (!state.aiming) return;
+    evt.preventDefault();
+    const pos = getPointerPos(evt);
+    state.aimCurrent = { x: pos.x, y: pos.y };
+    const dx = state.aimStart.x - state.aimCurrent.x;
+    const dy = state.aimStart.y - state.aimCurrent.y;
+    const power = Math.min(Math.hypot(dx, dy) / 120, 1);
+    powerFill.style.width = (power * 100).toFixed(1) + "%";
+  }
+
+  function pointerUp(evt) {
+    if (!state.aiming) return;
+    evt.preventDefault();
+    const pos = state.aimCurrent || state.aimStart;
+    const dx = state.aimStart.x - pos.x;
+    const dy = state.aimStart.y - pos.y;
+    const dist = Math.hypot(dx, dy);
+    const maxPower = 1.4;
+    const power = Math.min(dist / 120, maxPower);
+    if (power > 0.05) {
+      const angle = Math.atan2(dy, dx);
+      state.ball.vx = Math.cos(angle) * power * 0.9;
+      state.ball.vy = Math.sin(angle) * power * 0.9;
+      state.strokeCount++;
+      strokeDisplay.textContent = state.strokeCount;
     }
+    state.aiming = false;
+    state.aimStart = null;
+    state.aimCurrent = null;
+    powerFill.style.width = "0%";
   }
 
-  function moveAim(pos) {
-    if (!game.aiming) return;
-    game.aimCurrent = { x: pos.x, y: pos.y };
-  }
+  canvas.addEventListener('mousedown', pointerDown);
+  canvas.addEventListener('mousemove', pointerMove);
+  window.addEventListener('mouseup', pointerUp);
 
-  function endAim(pos) {
-    if (!game.aiming) return;
-    game.aiming = false;
-    if (!game.aimStart) return;
-    const dx = game.aimStart.x - pos.x;
-    const dy = game.aimStart.y - pos.y;
-    const dragDist = Math.sqrt(dx*dx + dy*dy);
-    if (dragDist < 4) {
-      return;
+  canvas.addEventListener('touchstart', pointerDown, { passive: false });
+  canvas.addEventListener('touchmove', pointerMove, { passive: false });
+  window.addEventListener('touchend', pointerUp, { passive: false });
+  window.addEventListener('touchcancel', pointerUp, { passive: false });
+
+  function updatePhysics() {
+    if (state.ballInHole) return;
+    let vx = state.ball.vx;
+    let vy = state.ball.vy;
+    const speed = Math.hypot(vx, vy);
+    if (speed < state.minSpeed) {
+      state.ball.vx = 0;
+      state.ball.vy = 0;
+    } else {
+      state.ball.vx *= state.friction;
+      state.ball.vy *= state.friction;
+      state.ball.x += state.ball.vx;
+      state.ball.y += state.ball.vy;
     }
-    const maxPower = 900; // tuned for touch
-    const powerScale = 4.0;
-    const power = Math.min(maxPower, dragDist * powerScale);
-    const angle = Math.atan2(dy, dx);
-    const speed = power / 1000 * 60; // convert to px/frame-ish
-    game.ball.vx = Math.cos(angle) * speed;
-    game.ball.vy = Math.sin(angle) * speed;
-    game.ball.moving = true;
-    game.strokeCount++;
-    game.totalStrokes++;
-    updateHUD();
-  }
 
-  root.addEventListener('mousedown', (e) => {
-    if (introPanel.classList.contains('visible') || betweenPanel.classList.contains('visible')) return;
-    startAim(getEventPos(e));
-  });
+    const inset = state.wallsInset;
+    if (state.ball.x - state.ball.r < inset) {
+      state.ball.x = inset + state.ball.r;
+      state.ball.vx = Math.abs(state.ball.vx) * 0.8;
+    }
+    if (state.ball.x + state.ball.r > width - inset) {
+      state.ball.x = width - inset - state.ball.r;
+      state.ball.vx = -Math.abs(state.ball.vx) * 0.8;
+    }
+    if (state.ball.y - state.ball.r < inset) {
+      state.ball.y = inset + state.ball.r;
+      state.ball.vy = Math.abs(state.ball.vy) * 0.8;
+    }
+    if (state.ball.y + state.ball.r > height - inset) {
+      state.ball.y = height - inset - state.ball.r;
+      state.ball.vy = -Math.abs(state.ball.vy) * 0.8;
+    }
 
-  root.addEventListener('mousemove', (e) => {
-    moveAim(getEventPos(e));
-  });
-
-  root.addEventListener('mouseup', (e) => {
-    endAim(getEventPos(e));
-  });
-
-  root.addEventListener('touchstart', (e) => {
-    if (introPanel.classList.contains('visible') || betweenPanel.classList.contains('visible')) return;
-    startAim(getEventPos(e));
-  }, { passive: false });
-
-  root.addEventListener('touchmove', (e) => {
-    moveAim(getEventPos(e));
-  }, { passive: false });
-
-  root.addEventListener('touchend', (e) => {
-    endAim(getEventPos(e));
-  }, { passive: false });
-
-  // --- Physics & Collision ---
-  function dot(ax, ay, bx, by) {
-    return ax*bx + ay*by;
-  }
-
-  function clamp(v, min, max) {
-    return v < min ? min : (v > max ? max : v);
-  }
-
-  function reflectVelocity(vx, vy, nx, ny, restitution) {
-    const vDotN = vx*nx + vy*ny;
-    const rx = vx - 2 * vDotN * nx;
-    const ry = vy - 2 * vDotN * ny;
-    return { vx: rx * restitution, vy: ry * restitution };
-  }
-
-  function segmentClosestPoint(x1, y1, x2, y2, px, py) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const len2 = dx*dx + dy*dy;
-    if (len2 === 0) return { x: x1, y: y1, t: 0 };
-    let t = ((px - x1)*dx + (py - y1)*dy) / len2;
-    t = clamp(t, 0, 1);
-    return { x: x1 + t*dx, y: y1 + t*dy, t };
-  }
-
-  function update(dt) {
-    const hole = game.holes[game.currentHoleIndex];
-    const ball = game.ball;
-
-    if (ball.moving && !ball.inHole) {
-      // Surface friction
-      let friction = 0.985;
-      const bx = ball.x / width;
-      const by = ball.y / height;
-
-      // Rough
-      for (const r of hole.roughRects) {
-        if (bx >= r.x && bx <= r.x + r.w && by >= r.y && by <= r.y + r.h) {
-          friction = 0.96;
-          break;
-        }
-      }
-
-      // Sand
-      for (const s of hole.sand) {
-        const sx = s.x * width;
-        const sy = s.y * height;
-        const sr = s.radius * Math.min(width, height);
-        const dx = ball.x - sx;
-        const dy = ball.y - sy;
-        if (dx*dx + dy*dy <= sr*sr) {
-          friction = 0.93;
-          break;
-        }
-      }
-
-      // Water: reset ball if inside
-      for (const w of hole.water) {
-        const wx = w.x * width;
-        const wy = w.y * height;
-        const wr = w.radius * Math.min(width, height);
-        const dx = ball.x - wx;
-        const dy = ball.y - wy;
-        if (dx*dx + dy*dy <= wr*wr) {
-          // Penalty: add one stroke and reset
-          const sx = hole.start.x * width;
-          const sy = hole.start.y * height;
-          ball.x = sx;
-          ball.y = sy;
-          ball.vx = 0;
-          ball.vy = 0;
-          ball.moving = false;
-          game.totalStrokes++; // water penalty
-          updateHUD();
-          return;
-        }
-      }
-
-      ball.x += ball.vx * dt;
-      ball.y += ball.vy * dt;
-
-      ball.vx *= friction;
-      ball.vy *= friction;
-
-      const speed2 = ball.vx*ball.vx + ball.vy*ball.vy;
-      if (speed2 < 0.01) {
-        ball.vx = 0;
-        ball.vy = 0;
-        ball.moving = false;
-      }
-
-      // Wall collisions
-      const restitution = 0.75;
-      for (const w of hole.walls) {
-        const x1 = w.x1 * width;
-        const y1 = w.y1 * height;
-        const x2 = w.x2 * width;
-        const y2 = w.y2 * height;
-        const cp = segmentClosestPoint(x1, y1, x2, y2, ball.x, ball.y);
-        const dx = ball.x - cp.x;
-        const dy = ball.y - cp.y;
-        const dist2 = dx*dx + dy*dy;
-        const r = ball.radius;
-        if (dist2 < r*r && dist2 > 0) {
-          const dist = Math.sqrt(dist2);
+    for (const o of state.obstacles) {
+      if (o.type === "bumper") {
+        const dx = state.ball.x - o.x;
+        const dy = state.ball.y - o.y;
+        const dist = Math.hypot(dx, dy);
+        const minDist = state.ball.r + o.r;
+        if (dist < minDist && dist > 0.0001) {
           const nx = dx / dist;
           const ny = dy / dist;
-          const penetration = r - dist;
-          ball.x += nx * penetration;
-          ball.y += ny * penetration;
-          const rv = reflectVelocity(ball.vx, ball.vy, nx, ny, restitution);
-          ball.vx = rv.vx;
-          ball.vy = rv.vy;
+          const overlap = minDist - dist;
+          state.ball.x += nx * overlap;
+          state.ball.y += ny * overlap;
+          const dot = state.ball.vx * nx + state.ball.vy * ny;
+          state.ball.vx -= 2 * dot * nx;
+          state.ball.vy -= 2 * dot * ny;
+          state.ball.vx *= 0.9;
+          state.ball.vy *= 0.9;
         }
+      } else if (o.type === "wall" || o.type === "gate") {
+        handleRectCollision(o);
       }
+    }
 
-      // Hole capture
-      const hx = hole.hole.x * width;
-      const hy = hole.hole.y * height;
-      const hr = hole.hole.radius * Math.min(width, height);
-      const dxh = ball.x - hx;
-      const dyh = ball.y - hy;
-      const distHole = Math.sqrt(dxh*dxh + dyh*dyh);
-      if (distHole < hr * 1.2 && speed2 < 1.2) {
-        // Pull into hole
-        ball.x = hx;
-        ball.y = hy;
-        ball.vx = 0;
-        ball.vy = 0;
-        ball.moving = false;
-        ball.inHole = true;
-        setTimeout(() => {
-          const isCourseEnd = (game.currentHoleIndex === game.holes.length - 1);
-          showBetween(isCourseEnd);
-        }, 350);
-      }
+    const holeDist = Math.hypot(state.ball.x - state.hole.x, state.ball.y - state.hole.y);
+    if (!state.ballInHole && holeDist < state.hole.r * 0.7 && speed < 1.2) {
+      sinkBall();
     }
   }
 
-  // --- Rendering ---
-  function draw() {
+  function handleRectCollision(o) {
+    const cx = o.x;
+    const cy = o.y;
+    const cos = Math.cos(o.angle || 0);
+    const sin = Math.sin(o.angle || 0);
+    const relX = state.ball.x - cx;
+    const relY = state.ball.y - cy;
+    const localX = relX * cos + relY * sin;
+    const localY = -relX * sin + relY * cos;
+    const hw = o.w / 2;
+    const hh = o.h / 2;
+    const closestX = Math.max(-hw, Math.min(localX, hw));
+    const closestY = Math.max(-hh, Math.min(localY, hh));
+    const dx = localX - closestX;
+    const dy = localY - closestY;
+    const dist = Math.hypot(dx, dy);
+    if (dist < state.ball.r && dist > 0.0001) {
+      const nxLocal = dx / dist;
+      const nyLocal = dy / dist;
+      const overlap = state.ball.r - dist;
+      const adjX = localX + nxLocal * overlap;
+      const adjY = localY + nyLocal * overlap;
+      const worldX = adjX * cos - adjY * sin + cx;
+      const worldY = adjX * sin + adjY * cos + cy;
+      state.ball.x = worldX;
+      state.ball.y = worldY;
+      const vxLocal = state.ball.vx * cos + state.ball.vy * sin;
+      const vyLocal = -state.ball.vx * sin + state.ball.vy * cos;
+      const dot = vxLocal * nxLocal + vyLocal * nyLocal;
+      const rvxLocal = vxLocal - 2 * dot * nxLocal;
+      const rvyLocal = vyLocal - 2 * dot * nyLocal;
+      const rvxWorld = rvxLocal * cos - rvyLocal * sin;
+      const rvyWorld = rvxLocal * sin + rvyLocal * cos;
+      state.ball.vx = rvxWorld * (o.type === "gate" ? 0.7 : 0.9);
+      state.ball.vy = rvyWorld * (o.type === "gate" ? 0.7 : 0.9);
+    }
+  }
+
+  function sinkBall() {
+    state.ballInHole = true;
+    state.ball.vx = 0;
+    state.ball.vy = 0;
+    state.ball.x = state.hole.x;
+    state.ball.y = state.hole.y;
+    const key = "lvl" + state.levelIndex;
+    const prevBest = state.bestScores[key];
+    if (prevBest == null || state.strokeCount < prevBest) {
+      state.bestScores[key] = state.strokeCount;
+      showBanner("Hole complete! New best: " + state.strokeCount + " strokes");
+    } else {
+      showBanner("Hole complete in " + state.strokeCount + " strokes");
+    }
+    updateBestDisplay();
+  }
+
+  function drawCourse() {
     ctx.clearRect(0, 0, width, height);
 
-    const hole = game.holes[game.currentHoleIndex];
-
-    // Background gradient
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-    bgGrad.addColorStop(0, '#02120b');
-    bgGrad.addColorStop(1, '#010608');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, width, height);
-
-    // Course base
+    const inset = state.wallsInset;
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetY = 8;
-
-    ctx.beginPath();
-    ctx.moveTo(hole.walls[0].x1 * width, hole.walls[0].y1 * height);
-    for (const w of hole.walls) {
-      ctx.lineTo(w.x2 * width, w.y2 * height);
-    }
-    ctx.closePath();
-
-    const fairGrad = ctx.createLinearGradient(0, 0, width, height);
-    fairGrad.addColorStop(0, '#1f7a4d');
-    fairGrad.addColorStop(1, '#0f4a2c');
-    ctx.fillStyle = fairGrad;
-    ctx.fill();
-
+    const grad = ctx.createLinearGradient(0, inset, 0, height - inset);
+    grad.addColorStop(0, "#1f6b3b");
+    grad.addColorStop(1, "#0f3c21");
+    ctx.fillStyle = grad;
+    ctx.fillRect(inset, inset, width - inset * 2, height - inset * 2);
     ctx.restore();
 
-    // Rough rectangles
-    for (const r of hole.roughRects) {
-      ctx.fillStyle = '#0b3a23';
-      ctx.fillRect(r.x * width, r.y * height, r.w * width, r.h * height);
+    ctx.save();
+    ctx.strokeStyle = "#14502a";
+    ctx.lineWidth = 10;
+    ctx.lineJoin = "round";
+    ctx.strokeRect(inset, inset, width - inset * 2, height - inset * 2);
+    ctx.restore();
+
+    for (const o of state.obstacles) {
+      if (o.type === "bumper") {
+        ctx.save();
+        const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+        g.addColorStop(0, "#fdfdfd");
+        g.addColorStop(0.4, "#c0392b");
+        g.addColorStop(1, "#7f1d1d");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.6)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      } else if (o.type === "wall" || o.type === "gate") {
+        ctx.save();
+        ctx.translate(o.x, o.y);
+        ctx.rotate(o.angle || 0);
+        ctx.beginPath();
+        ctx.rect(-o.w / 2, -o.h / 2, o.w, o.h);
+        if (o.type === "gate") {
+          ctx.fillStyle = "rgba(192,57,43,0.85)";
+        } else {
+          ctx.fillStyle = "#2c3e50";
+        }
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.7)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
-    // Water
-    for (const w of hole.water) {
-      const wx = w.x * width;
-      const wy = w.y * height;
-      const wr = w.radius * Math.min(width, height);
-      const waterGrad = ctx.createRadialGradient(wx - wr*0.3, wy - wr*0.3, wr*0.2, wx, wy, wr);
-      waterGrad.addColorStop(0, '#3fa9ff');
-      waterGrad.addColorStop(1, '#1b4a9d');
-      ctx.fillStyle = waterGrad;
-      ctx.beginPath();
-      ctx.arc(wx, wy, wr, 0, Math.PI * 2);
-      ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(state.hole.x, state.hole.y, state.hole.r, 0, Math.PI * 2);
+    const holeGrad = ctx.createRadialGradient(
+      state.hole.x, state.hole.y, 0,
+      state.hole.x, state.hole.y, state.hole.r
+    );
+    holeGrad.addColorStop(0, "#000000");
+    holeGrad.addColorStop(0.6, "#111111");
+    holeGrad.addColorStop(1, "#333333");
+    ctx.fillStyle = holeGrad;
+    ctx.fill();
+    ctx.restore();
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(state.hole.x, state.hole.y, state.hole.r + 6, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(245,197,66,0.7)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    const ballShadowR = state.ball.r * 1.1;
+    const shadowGrad = ctx.createRadialGradient(
+      state.ball.x + 2, state.ball.y + 4, 0,
+      state.ball.x + 2, state.ball.y + 4, ballShadowR
+    );
+    shadowGrad.addColorStop(0, "rgba(0,0,0,0.4)");
+    shadowGrad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = shadowGrad;
+    ctx.beginPath();
+    ctx.arc(state.ball.x + 2, state.ball.y + 4, ballShadowR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    const ballGrad = ctx.createRadialGradient(
+      state.ball.x - 4, state.ball.y - 4, 2,
+      state.ball.x, state.ball.y, state.ball.r
+    );
+    ballGrad.addColorStop(0, "#ffffff");
+    ballGrad.addColorStop(0.4, "#f0f0f0");
+    ballGrad.addColorStop(1, "#c0c0c0");
+    ctx.fillStyle = ballGrad;
+    ctx.beginPath();
+    ctx.arc(state.ball.x, state.ball.y, state.ball.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    if (state.aiming && state.aimStart && state.aimCurrent) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(245,197,66,0.9)";
       ctx.lineWidth = 2;
-      ctx.setLineDash([6, 6]);
+      ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.arc(wx, wy, wr * 0.9, 0, Math.PI * 2);
+      ctx.moveTo(state.ball.x, state.ball.y);
+      ctx.lineTo(state.aimCurrent.x, state.aimCurrent.y);
       ctx.stroke();
       ctx.setLineDash([]);
-    }
-
-    // Sand
-    for (const s of hole.sand) {
-      const sx = s.x * width;
-      const sy = s.y * height;
-      const sr = s.radius * Math.min(width, height);
-      const sandGrad = ctx.createRadialGradient(sx - sr*0.3, sy - sr*0.3, sr*0.2, sx, sy, sr);
-      sandGrad.addColorStop(0, '#f2e2a0');
-      sandGrad.addColorStop(1, '#c9b26a');
-      ctx.fillStyle = sandGrad;
-      ctx.beginPath();
-      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Walls
-    ctx.strokeStyle = '#0b1418';
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (const w of hole.walls) {
-      ctx.moveTo(w.x1 * width, w.y1 * height);
-      ctx.lineTo(w.x2 * width, w.y2 * height);
-    }
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    for (const w of hole.walls) {
-      ctx.moveTo(w.x1 * width, w.y1 * height);
-      ctx.lineTo(w.x2 * width, w.y2 * height);
-    }
-    ctx.stroke();
-
-    // Hole
-    const hx = hole.hole.x * width;
-    const hy = hole.hole.y * height;
-    const hr = hole.hole.radius * Math.min(width, height);
-
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(hx, hy, hr * 1.1, 0, Math.PI * 2);
-    ctx.fillStyle = '#050505';
-    ctx.fill();
-    ctx.restore();
-
-    // Flag
-    ctx.save();
-    ctx.translate(hx, hy - hr * 2.5);
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(0, hr * 2.5);
-    ctx.stroke();
-
-    const flagWidth = hr * 2.2;
-    const flagHeight = hr * 1.4;
-    const flagGrad = ctx.createLinearGradient(0, 0, flagWidth, 0);
-    flagGrad.addColorStop(0, '#ffed4a');
-    flagGrad.addColorStop(1, '#ff6b6b');
-    ctx.fillStyle = flagGrad;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(flagWidth, flagHeight * 0.5);
-    ctx.lineTo(0, flagHeight);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    // Ball
-    const ball = game.ball;
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-    const ballGrad = ctx.createRadialGradient(
-      ball.x - ball.radius * 0.4,
-      ball.y - ball.radius * 0.4,
-      ball.radius * 0.2,
-      ball.x,
-      ball.y,
-      ball.radius
-    );
-    ballGrad.addColorStop(0, '#ffffff');
-    ballGrad.addColorStop(1, '#cfd6e0');
-    ctx.fillStyle = ballGrad;
-    ctx.fill();
-    ctx.restore();
-
-    // Ball dimples (simple)
-    ctx.fillStyle = 'rgba(200,210,220,0.6)';
-    const dCount = 6;
-    for (let i = 0; i < dCount; i++) {
-      const angle = (Math.PI * 2 / dCount) * i;
-      const r = ball.radius * 0.55;
-      const dx = Math.cos(angle) * r;
-      const dy = Math.sin(angle) * r;
-      ctx.beginPath();
-      ctx.arc(ball.x + dx, ball.y + dy, ball.radius * 0.18, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Aim line
-    if (game.aiming && game.aimStart && game.aimCurrent) {
-      const sx = ball.x;
-      const sy = ball.y;
-      const ex = game.aimCurrent.x;
-      const ey = game.aimCurrent.y;
-      const dx = sx - ex;
-      const dy = sy - ey;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      const maxLen = 160;
-      const len = Math.min(maxLen, dist);
+      const dx = state.aimStart.x - state.aimCurrent.x;
+      const dy = state.aimStart.y - state.aimCurrent.y;
+      const dist = Math.hypot(dx, dy);
+      const maxLen = 80;
+      const len = Math.min(dist, maxLen);
       const angle = Math.atan2(dy, dx);
-      const tx = sx + Math.cos(angle) * len;
-      const ty = sy + Math.sin(angle) * len;
-
-      ctx.save();
-      ctx.lineWidth = 3;
-      const aimGrad = ctx.createLinearGradient(sx, sy, tx, ty);
-      aimGrad.addColorStop(0, 'rgba(79,227,161,0.0)');
-      aimGrad.addColorStop(1, 'rgba(79,227,161,0.9)');
-      ctx.strokeStyle = aimGrad;
+      const arrowX = state.ball.x + Math.cos(angle) * len;
+      const arrowY = state.ball.y + Math.sin(angle) * len;
       ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(tx, ty);
+      ctx.moveTo(arrowX, arrowY);
+      ctx.lineTo(
+        arrowX - Math.cos(angle - 0.4) * 10,
+        arrowY - Math.sin(angle - 0.4) * 10
+      );
+      ctx.moveTo(arrowX, arrowY);
+      ctx.lineTo(
+        arrowX - Math.cos(angle + 0.4) * 10,
+        arrowY - Math.sin(angle + 0.4) * 10
+      );
       ctx.stroke();
-
-      ctx.fillStyle = 'rgba(79,227,161,0.9)';
-      ctx.beginPath();
-      ctx.arc(tx, ty, 5, 0, Math.PI * 2);
-      ctx.fill();
       ctx.restore();
     }
-
-    // Par label
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.font = '12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    const parText = 'Par ' + hole.par;
-    ctx.fillText(parText, 12, 32);
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fillText(parText, 11, 31);
   }
 
-  // --- Main Loop ---
-  function loop(now) {
-    const dtMs = now - game.lastTime;
-    game.lastTime = now;
-    const dt = dtMs / 16.67; // normalize to ~60fps
-
-    update(dt);
-    draw();
-
+  function loop() {
+    updatePhysics();
+    drawCourse();
     requestAnimationFrame(loop);
   }
 
-  requestAnimationFrame(loop);
-  showIntro();
+  createLevels();
+  loadLevel(0);
+  loop();
 })();
 </script>
 </body>
