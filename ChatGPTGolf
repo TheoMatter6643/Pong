@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Neon Rift Mini Golf</title>
+
+<style>
+:root{
+    --bg:#071018;
+    --panel:#0d1d2b;
+    --cyan:#33f6ff;
+    --pink:#ff4fd8;
+    --lime:#8cff5a;
+    --gold:#ffd75a;
+}
+
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    overflow:hidden;
+    background:
+        radial-gradient(circle at 20% 20%, #10263a 0%, transparent 30%),
+        radial-gradient(circle at 80% 30%, #1b1030 0%, transparent 30%),
+        linear-gradient(180deg,#04080f,#081521);
+    color:white;
+    font-family:Segoe UI,Arial,sans-serif;
+}
+
+#ui{
+    position:absolute;
+    top:12px;
+    left:12px;
+    z-index:10;
+    background:rgba(7,15,25,.82);
+    border:1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(8px);
+    border-radius:14px;
+    padding:12px;
+    width:320px;
+    box-shadow:0 0 20px rgba(0,255,255,.15);
+}
+
+h1{
+    margin:0 0 6px;
+    font-size:20px;
+    color:var(--cyan);
+    text-shadow:0 0 12px var(--cyan);
+}
+
+#stats{
+    margin:8px 0;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    font-weight:600;
+}
+
+.small{
+    font-size:13px;
+    line-height:1.4;
+    opacity:.92;
+}
+
+button{
+    margin-top:8px;
+    background:linear-gradient(135deg,var(--pink),#b84cff);
+    color:white;
+    border:none;
+    border-radius:10px;
+    padding:8px 12px;
+    cursor:pointer;
+    font-weight:700;
+}
+
+button:hover{
+    transform:translateY(-1px);
+}
+
+#banner{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%) scale(.9);
+    padding:20px 35px;
+    border-radius:20px;
+    background:rgba(0,0,0,.82);
+    border:2px solid var(--cyan);
+    color:white;
+    font-size:42px;
+    font-weight:900;
+    opacity:0;
+    pointer-events:none;
+    transition:.4s;
+    text-align:center;
+    text-shadow:0 0 20px var(--cyan);
+    z-index:20;
+}
+
+#banner.show{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+}
+
+#corner{
+    position:absolute;
+    right:12px;
+    top:12px;
+    z-index:10;
+    padding:10px 14px;
+    border-radius:12px;
+    background:rgba(0,0,0,.4);
+    border:1px solid rgba(255,255,255,.1);
+    font-weight:700;
+}
+
+canvas{
+    display:block;
+}
+</style>
+</head>
+<body>
+
+<div id="ui">
+    <h1>⛳ Neon Rift Mini Golf</h1>
+
+    <div id="stats">
+        <div>Level: <span id="level">1</span></div>
+        <div>Strokes: <span id="strokes">0</span></div>
+        <div>Best: <span id="best">-</span></div>
+    </div>
+
+    <div class="small">
+        <b>How to play</b><br>
+        Click and drag from the ball to aim.<br>
+        Pull farther for more power, then release.<br><br>
+        Features:
+        Neon bumpers, moving hazards, portals,
+        friction, particle effects, scoring and
+        4 handcrafted levels.
+    </div>
+
+    <button id="restartBtn">Restart Level</button>
+</div>
+
+<div id="corner">Drag & Release</div>
+<div id="banner"></div>
+
+<canvas id="game"></canvas>
+
+<script>
+/* =====================================================
+   NEON RIFT MINI GOLF
+   Single-file challenge entry
+===================================================== */
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+const levelText = document.getElementById("level");
+const strokesText = document.getElementById("strokes");
+const bestText = document.getElementById("best");
+const banner = document.getElementById("banner");
+
+let audioCtx = null;
+
+function beep(freq, dur, type="sine", gain=.03){
+    try{
+        if(!audioCtx){
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        g.gain.value = gain;
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+    }catch(e){}
+}
+
+function showBanner(text){
+    banner.textContent = text;
+    banner.classList.add("show");
+    setTimeout(()=>banner.classList.remove("show"),1600);
+}
+
+/* =====================================================
+   LEVELS
+===================================================== */
+
+const levels = [
+{
+    ball:{x:140,y:canvas.height/2},
+    hole:{x:canvas.width-160,y:canvas.height/2,r:18},
+    walls:[
+        {x:300,y:120,w:30,h:300},
+        {x:520,y:0,w:30,h:260},
+        {x:520,y:360,w:30,h:260},
+    ],
+    bumpers:[
+        {x:720,y:250,r:30}
+    ],
+    portals:[]
+},
+{
+    ball:{x:110,y:110},
+    hole:{x:canvas.width-130,y:canvas.height-130,r:18},
+    walls:[
+        {x:200,y:0,w:25,h:350},
+        {x:420,y:250,w:25,h:500},
+        {x:650,y:0,w:25,h:350},
+        {x:880,y:250,w:25,h:500},
+    ],
+    bumpers:[
+        {x:530,y:150,r:35},
+        {x:760,y:470,r:35}
+    ],
+    portals:[
+        {a:{x:300,y:500,r:22}, b:{x:960,y:120,r:22}}
+    ]
+},
+{
+    ball:{x:120,y:canvas.height/2},
+    hole:{x:canvas.width-140,y:120,r:18},
+    walls:[
+        {x:250,y:170,w:700,h:20},
+        {x:250,y:450,w:700,h:20}
+    ],
+    bumpers:[
+        {x:600,y:310,r:42}
+    ],
+    moving:[
+        {x:820,y:220,w:24,h:150,dir:1,range:140,speed:1.6,start:220}
+    ],
+    portals:[]
+},
+{
+    ball:{x:100,y:canvas.height-120},
+    hole:{x:canvas.width-140,y:120,r:20},
+    walls:[
+        {x:230,y:520,w:500,h:20},
+        {x:230,y:140,w:20,h:400},
+        {x:730,y:140,w:20,h:400},
+        {x:450,y:140,w:20,h:250}
+    ],
+    bumpers:[
+        {x:350,y:90,r:26},
+        {x:820,y:520,r:32}
+    ],
+    portals:[
+        {a:{x:180,y:240,r:22}, b:{x:960,y:440,r:22}}
+    ],
+    moving:[
+        {x:560,y:350,w:180,h:24,dir:1,range:180,speed:2,start:560}
+    ]
+}
+];
+
+/* =====================================================
+   GAME STATE
+===================================================== */
+
+let levelIndex = 0;
+let strokes = 0;
+let bestScores = JSON.parse(localStorage.getItem("neonGolfBest") || "{}");
+
+const ball = {
+    x:100,
+    y:100,
+    vx:0,
+    vy:0,
+    r:11
+};
+
+let hole = {};
+let walls = [];
+let bumpers = [];
+let portals = [];
+let moving = [];
+
+let dragging = false;
+let dragX = 0;
+let dragY = 0;
+
+const particles = [];
+
+function loadLevel(i){
+    const L = levels[i];
+
+    ball.x = L.ball.x;
+    ball.y = L.ball.y;
+    ball.vx = 0;
+    ball.vy = 0;
+
+    hole = JSON.parse(JSON.stringify(L.hole));
+    walls = JSON.parse(JSON.stringify(L.walls || []));
+    bumpers = JSON.parse(JSON.stringify(L.bumpers || []));
+    portals = JSON.parse(JSON.stringify(L.portals || []));
+    moving = JSON.parse(JSON.stringify(L.moving || []));
+
+    strokes = 0;
+    updateUI();
+}
+
+function updateUI(){
+    levelText.textContent = levelIndex + 1;
+    strokesText.textContent = strokes;
+
+    bestText.textContent =
+        bestScores[levelIndex] !== undefined
+        ? bestScores[levelIndex]
+        : "-";
+}
+
+/* =====================================================
+   INPUT
+===================================================== */
+
+canvas.addEventListener("mousedown", e=>{
+    const mx=e.clientX;
+    const my=e.clientY;
+
+    const d=Math.hypot(mx-ball.x,my-ball.y);
+
+    if(d<30 && ballSpeed()<0.3){
+        dragging=true;
+        dragX=mx;
+        dragY=my;
+    }
+});
+
+window.addEventListener("mousemove",e=>{
+    dragX=e.clientX;
+    dragY=e.clientY;
+});
+
+window.addEventListener("mouseup",e=>{
+    if(!dragging) return;
+
+    dragging=false;
+
+    const dx=ball.x-dragX;
+    const dy=ball.y-dragY;
+
+    const power=Math.min(170,Math.hypot(dx,dy));
+
+    ball.vx=(dx/power||0)*power*0.18;
+    ball.vy=(dy/power||0)*power*0.18;
+
+    strokes++;
+    updateUI();
+
+    beep(220+power*2,.08,"triangle",.04);
+});
+
+document.getElementById("restartBtn").onclick=()=>{
+    loadLevel(levelIndex);
+};
+
+/* =====================================================
+   HELPERS
+===================================================== */
+
+function ballSpeed(){
+    return Math.hypot(ball.vx,ball.vy);
+}
+
+function emit(x,y,color,count=10){
+    for(let i=0;i<count;i++){
+        particles.push({
+            x,y,
+            vx:(Math.random()-0.5)*5,
+            vy:(Math.random()-0.5)*5,
+            life:40+Math.random()*30,
+            color
+        });
+    }
+}
+
+/* =====================================================
+   PHYSICS
+===================================================== */
+
+function update(){
+
+    moving.forEach(m=>{
+        m.x += m.speed*m.dir;
+
+        if(m.x > m.start + m.range || m.x < m.start - m.range){
+            m.dir *= -1;
+        }
+    });
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    // friction
+    ball.vx *= 0.992;
+    ball.vy *= 0.992;
+
+    if(ballSpeed()<0.02){
+        ball.vx=0;
+        ball.vy=0;
+    }
+
+    // outer boundaries
+    if(ball.x-ball.r<0){
+        ball.x=ball.r;
+        ball.vx=Math.abs(ball.vx)*0.9;
+    }
+    if(ball.x+ball.r>canvas.width){
+        ball.x=canvas.width-ball.r;
+        ball.vx=-Math.abs(ball.vx)*0.9;
+    }
+
+    if(ball.y-ball.r<0){
+        ball.y=ball.r;
+        ball.vy=Math.abs(ball.vy)*0.9;
+    }
+    if(ball.y+ball.r>canvas.height){
+        ball.y=canvas.height-ball.r;
+        ball.vy=-Math.abs(ball.vy)*0.9;
+    }
+
+    // wall collision
+    [...walls,...moving].forEach(w=>{
+
+        const nearestX =
+            Math.max(w.x, Math.min(ball.x, w.x+w.w));
+        const nearestY =
+            Math.max(w.y, Math.min(ball.y, w.y+w.h));
+
+        const dx=ball.x-nearestX;
+        const dy=ball.y-nearestY;
+
+        if(dx*dx+dy*dy < ball.r*ball.r){
+
+            if(Math.abs(dx)>Math.abs(dy)){
+                ball.vx *= -0.95;
+                ball.x += dx>0 ? 2 : -2;
+            }else{
+                ball.vy *= -0.95;
+                ball.y += dy>0 ? 2 : -2;
+            }
+
+            beep(500,.03,"square",.015);
+        }
+    });
+
+    // bumpers
+    bumpers.forEach(b=>{
+        const dx=ball.x-b.x;
+        const dy=ball.y-b.y;
+        const d=Math.hypot(dx,dy);
+
+        if(d < ball.r+b.r){
+            const nx=dx/d;
+            const ny=dy/d;
+
+            const dot = ball.vx*nx + ball.vy*ny;
+
+            ball.vx -= 2*dot*nx;
+            ball.vy -= 2*dot*ny;
+
+            ball.vx*=1.05;
+            ball.vy*=1.05;
+
+            const overlap=(ball.r+b.r)-d;
+            ball.x += nx*overlap;
+            ball.y += ny*overlap;
+
+            emit(ball.x,ball.y,"#33f6ff",8);
+            beep(800,.04,"sawtooth",.02);
+        }
+    });
+
+    // portals
+    portals.forEach(p=>{
+        const da=Math.hypot(ball.x-p.a.x, ball.y-p.a.y);
+
+        if(da < p.a.r && !p.cool){
+            ball.x=p.b.x;
+            ball.y=p.b.y;
+            p.cool=60;
+            emit(ball.x,ball.y,"#ff4fd8",25);
+            beep(1200,.12,"triangle",.03);
+        }
+
+        if(p.cool) p.cool--;
+    });
+
+    // particles
+    for(let i=particles.length-1;i>=0;i--){
+        const p=particles[i];
+        p.x+=p.vx;
+        p.y+=p.vy;
+        p.life--;
+
+        if(p.life<=0){
+            particles.splice(i,1);
+        }
+    }
+
+    // hole check
+    const hd=Math.hypot(ball.x-hole.x, ball.y-hole.y);
+
+    if(hd < hole.r-3 && ballSpeed()<2.5){
+
+        emit(hole.x,hole.y,"#ffd75a",60);
+
+        if(
+            bestScores[levelIndex]===undefined ||
+            strokes < bestScores[levelIndex]
+        ){
+            bestScores[levelIndex]=strokes;
+            localStorage.setItem(
+                "neonGolfBest",
+                JSON.stringify(bestScores)
+            );
+        }
+
+        updateUI();
+
+        beep(523,.08);
+        setTimeout(()=>beep(659,.08),80);
+        setTimeout(()=>beep(784,.16),160);
+
+        if(levelIndex < levels.length-1){
+            showBanner("HOLE COMPLETE!");
+            setTimeout(()=>{
+                levelIndex++;
+                loadLevel(levelIndex);
+            },1200);
+        }else{
+            showBanner("YOU WIN!");
+            setTimeout(()=>{
+                levelIndex=0;
+                loadLevel(0);
+            },2000);
+        }
+
+        ball.x=-9999;
+    }
+}
+
+/* =====================================================
+   RENDERING
+===================================================== */
+
+function glow(color, blur){
+    ctx.shadowColor=color;
+    ctx.shadowBlur=blur;
+}
+
+function draw(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // star field
+    for(let i=0;i<70;i++){
+        const x=(i*1237)%canvas.width;
+        const y=(i*887)%canvas.height;
+        ctx.fillStyle="rgba(255,255,255,.08)";
+        ctx.fillRect(x,y,2,2);
+    }
+
+    // course glow
+    ctx.strokeStyle="rgba(0,255,255,.15)";
+    ctx.lineWidth=3;
+    ctx.strokeRect(8,8,canvas.width-16,canvas.height-16);
+
+    // hole
+    glow("#ffd75a",25);
+    ctx.beginPath();
+    ctx.fillStyle="#000";
+    ctx.arc(hole.x,hole.y,hole.r,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.strokeStyle="#ffd75a";
+    ctx.lineWidth=4;
+    ctx.arc(hole.x,hole.y,hole.r+5,0,Math.PI*2);
+    ctx.stroke();
+
+    // portals
+    portals.forEach(p=>{
+        glow("#ff4fd8",20);
+
+        ctx.lineWidth=4;
+        ctx.strokeStyle="#ff4fd8";
+        ctx.beginPath();
+        ctx.arc(p.a.x,p.a.y,p.a.r,0,Math.PI*2);
+        ctx.stroke();
+
+        glow("#33f6ff",20);
+        ctx.strokeStyle="#33f6ff";
+        ctx.beginPath();
+        ctx.arc(p.b.x,p.b.y,p.b.r,0,Math.PI*2);
+        ctx.stroke();
+    });
+
+    // walls
+    [...walls,...moving].forEach(w=>{
+        glow("#33f6ff",10);
+        ctx.fillStyle="#113249";
+        ctx.fillRect(w.x,w.y,w.w,w.h);
+
+        ctx.strokeStyle="#33f6ff";
+        ctx.lineWidth=2;
+        ctx.strokeRect(w.x,w.y,w.w,w.h);
+    });
+
+    // bumpers
+    bumpers.forEach(b=>{
+        glow("#ff4fd8",20);
+        ctx.beginPath();
+        ctx.fillStyle="#39134d";
+        ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.strokeStyle="#ff4fd8";
+        ctx.lineWidth=3;
+        ctx.stroke();
+    });
+
+    // aim guide
+    if(dragging){
+        const dx=ball.x-dragX;
+        const dy=ball.y-dragY;
+
+        ctx.strokeStyle="rgba(255,255,255,.8)";
+        ctx.lineWidth=2;
+        ctx.setLineDash([8,6]);
+
+        ctx.beginPath();
+        ctx.moveTo(ball.x,ball.y);
+        ctx.lineTo(ball.x+dx,ball.y+dy);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+
+        const p=Math.min(100,Math.hypot(dx,dy));
+
+        ctx.fillStyle="rgba(0,0,0,.5)";
+        ctx.fillRect(ball.x-50,ball.y-40,100,10);
+
+        ctx.fillStyle="#8cff5a";
+        ctx.fillRect(ball.x-50,ball.y-40,p,10);
+    }
+
+    // ball
+    glow("#fff",18);
+
+    const g=ctx.createRadialGradient(
+        ball.x-4,ball.y-4,1,
+        ball.x,ball.y,ball.r
+    );
+
+    g.addColorStop(0,"#fff");
+    g.addColorStop(1,"#d4ecff");
+
+    ctx.beginPath();
+    ctx.fillStyle=g;
+    ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+    ctx.fill();
+
+    // particles
+    particles.forEach(p=>{
+        ctx.globalAlpha=Math.max(0,p.life/60);
+        glow(p.color,12);
+        ctx.fillStyle=p.color;
+        ctx.fillRect(p.x,p.y,3,3);
+    });
+
+    ctx.globalAlpha=1;
+    ctx.shadowBlur=0;
+}
+
+function loop(){
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+loadLevel(0);
+loop();
+
+</script>
+</body>
+</html>
